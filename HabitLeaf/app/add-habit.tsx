@@ -12,6 +12,8 @@ import { useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Spacing, BorderRadius, Shadows } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useAppDispatch } from '@/store/hooks';
+import { addHabit } from '@/store/habitsSlice';
 
 const COLORS = [
     '#3B82F6', // Blue
@@ -26,20 +28,27 @@ const COLORS = [
 
 const ICONS = ['💧', '🏃', '📚', '🧘', '🎯', '✍️', '🎵', '🍎', '💪', '🌟', '🔥', '⚡'];
 
-const FREQUENCIES = [
-    { id: 'daily', label: 'Her Gün', value: 'daily', icon: '📅' },
-    { id: 'weekly', label: 'Haftalık', value: 'weekly', icon: '📆' },
-    { id: 'monthly', label: 'Aylık', value: 'monthly', icon: '🗓️' },
-];
+const FREQUENCIES: Array<{
+    id: string;
+    label: string;
+    value: 'daily' | 'weekly' | 'monthly';
+    icon: string;
+}> = [
+        { id: 'daily', label: 'Her Gün', value: 'daily', icon: '📅' },
+        { id: 'weekly', label: 'Haftalık', value: 'weekly', icon: '📆' },
+        { id: 'monthly', label: 'Aylık', value: 'monthly', icon: '🗓️' },
+    ];
 
 export default function AddHabitScreen() {
     const router = useRouter();
     const colorScheme = useColorScheme();
     const theme = Colors[colorScheme ?? 'light'];
+    const dispatch = useAppDispatch();
+
     const [name, setName] = useState('');
     const [selectedColor, setSelectedColor] = useState(COLORS[0]);
     const [selectedIcon, setSelectedIcon] = useState(ICONS[0]);
-    const [selectedFrequency, setSelectedFrequency] = useState('daily');
+    const [selectedFrequency, setSelectedFrequency] = useState<'daily' | 'weekly' | 'monthly'>('daily');
 
     const handleSave = () => {
         if (!name.trim()) {
@@ -47,12 +56,20 @@ export default function AddHabitScreen() {
             return;
         }
 
-        console.log({
-            name,
-            color: selectedColor,
-            icon: selectedIcon,
-            frequency: selectedFrequency,
-        });
+        // Redux'a yeni alışkanlık ekle
+        dispatch(
+            addHabit({
+                name,
+                color: selectedColor,
+                icon: selectedIcon,
+                frequency: selectedFrequency,
+                createdDate: new Date().toLocaleDateString('tr-TR', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric',
+                }),
+            })
+        );
 
         router.back();
     };

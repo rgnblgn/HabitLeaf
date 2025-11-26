@@ -2,23 +2,21 @@ import { StyleSheet, ScrollView, TouchableOpacity, View, Text, Animated } from '
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useRouter } from 'expo-router';
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Spacing, BorderRadius, Shadows, Typography } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-
-// Örnek alışkanlık verisi
-const mockHabits = [
-  { id: '1', name: 'Su İç', color: '#3B82F6', icon: '💧', completed: false },
-  { id: '2', name: 'Spor Yap', color: '#10B981', icon: '🏃', completed: true },
-  { id: '3', name: 'Kitap Oku', color: '#8B5CF6', icon: '📚', completed: false },
-];
+import { useAppSelector, useAppDispatch } from '@/store/hooks';
+import { toggleHabit } from '@/store/habitsSlice';
 
 export default function HomeScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? 'light'];
-  const [habits, setHabits] = useState(mockHabits);
+  const dispatch = useAppDispatch();
+
+  // Redux'tan alışkanlıkları al
+  const habits = useAppSelector((state) => state.habits.habits);
   const progressAnim = useRef(new Animated.Value(0)).current;
 
   const completedCount = habits.filter(h => h.completed).length;
@@ -33,8 +31,8 @@ export default function HomeScreen() {
     }).start();
   }, [progressPercentage]);
 
-  const toggleHabit = (id: string) => {
-    setHabits(habits.map(h => h.id === id ? { ...h, completed: !h.completed } : h));
+  const handleToggleHabit = (id: string) => {
+    dispatch(toggleHabit(id));
   };
 
   const getGreeting = () => {
@@ -170,7 +168,7 @@ export default function HomeScreen() {
                 ]}
                 onPress={(e) => {
                   e.stopPropagation();
-                  toggleHabit(habit.id);
+                  handleToggleHabit(habit.id);
                 }}
               >
                 {habit.completed && (

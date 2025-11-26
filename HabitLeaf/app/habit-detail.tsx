@@ -1,59 +1,91 @@
-import { StyleSheet, ScrollView, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, View, Alert } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-
-// Mock veri - gerçekte state management'tan gelecek
-const mockHabitDetails = {
-    '1': {
-        id: '1',
-        name: 'Su İç',
-        color: '#3B82F6',
-        icon: '💧',
-        frequency: 'Her Gün',
-        streak: 12,
-        totalCompleted: 45,
-        createdDate: '14 Kasım 2025',
-        history: [
-            { date: '26 Kas', completed: false },
-            { date: '25 Kas', completed: true },
-            { date: '24 Kas', completed: true },
-            { date: '23 Kas', completed: true },
-            { date: '22 Kas', completed: false },
-            { date: '21 Kas', completed: true },
-            { date: '20 Kas', completed: true },
-        ],
-    },
-    '2': {
-        id: '2',
-        name: 'Spor Yap',
-        color: '#10B981',
-        icon: '🏃',
-        frequency: 'Her Gün',
-        streak: 7,
-        totalCompleted: 28,
-        createdDate: '19 Kasım 2025',
-        history: [],
-    },
-    '3': {
-        id: '3',
-        name: 'Kitap Oku',
-        color: '#8B5CF6',
-        icon: '📚',
-        frequency: 'Her Gün',
-        streak: 3,
-        totalCompleted: 15,
-        createdDate: '23 Kasım 2025',
-        history: [],
-    },
-};
+import { useAppSelector, useAppDispatch } from '@/store/hooks';
+import { deleteHabit } from '@/store/habitsSlice';
 
 export default function HabitDetailScreen() {
     const router = useRouter();
     const { id } = useLocalSearchParams();
+    const dispatch = useAppDispatch();
 
     const habitId = (id as string) || '1';
-    const habit = mockHabitDetails[habitId as keyof typeof mockHabitDetails] || mockHabitDetails['1'];
+
+    // Redux'tan alışkanlığı al
+    const habit = useAppSelector((state) =>
+        state.habits.habits.find((h) => h.id === habitId)
+    );
+
+    if (!habit) {
+        return (
+            <ThemedView style={styles.container}>
+                <ThemedView style={styles.header}>
+                    <TouchableOpacity onPress={() => router.back()}>
+                        <ThemedText style={styles.backButton}>← Geri</ThemedText>
+                    </TouchableOpacity>
+                </ThemedView>
+                <ThemedView style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ThemedText>Alışkanlık bulunamadı</ThemedText>
+                </ThemedView>
+            </ThemedView>
+        );
+    }
+
+    const handleDelete = () => {
+        Alert.alert(
+            'Alışkanlığı Sil',
+            'Bu alışkanlığı silmek istediğinize emin misiniz?',
+            [
+                { text: 'İptal', style: 'cancel' },
+                {
+                    text: 'Sil',
+                    style: 'destructive',
+                    onPress: () => {
+                        dispatch(deleteHabit(habitId));
+                        router.back();
+                    },
+                },
+            ]
+        );
+    };
+
+    const getFrequencyLabel = (frequency: string) => {
+        switch (frequency) {
+            case 'daily':
+                return 'Her Gün';
+            case 'weekly':
+                return 'Haftalık';
+            case 'monthly':
+                return 'Aylık';
+            default:
+                return frequency;
+        }
+    };
+
+    const getLast30Days = () => {
+        const days = [];
+        const today = new Date();
+
+        for (let i = 29; i >= 0; i--) {
+            const date = new Date(today);
+            date.setDate(today.getDate() - i);
+
+            const dateString = `${date.getDate()}/${date.getMonth() + 1}`;
+            const isToday = i === 0;
+            const isFuture = false;
+
+            days.push({
+                day: date.getDate(),
+                dateString,
+                isToday,
+                isFuture,
+                fullDate: date,
+            });
+        }
+
+        return days;
+    };
 
     return (
         <ThemedView style={styles.container}>
@@ -72,7 +104,7 @@ export default function HabitDetailScreen() {
                 <ThemedView style={[styles.habitHeader, { backgroundColor: habit.color }]}>
                     <ThemedText style={styles.habitIcon}>{habit.icon}</ThemedText>
                     <ThemedText style={styles.habitName}>{habit.name}</ThemedText>
-                    <ThemedText style={styles.habitFrequency}>{habit.frequency}</ThemedText>
+                    <ThemedText style={styles.habitFrequency}>{getFrequencyLabel(habit.frequency)}</ThemedText>
                 </ThemedView>
 
                 {/* İstatistikler */}
@@ -102,7 +134,7 @@ export default function HabitDetailScreen() {
                     </View>
                     <View style={styles.detailRow}>
                         <ThemedText style={styles.detailLabel}>Sıklık:</ThemedText>
-                        <ThemedText style={styles.detailValue}>{habit.frequency}</ThemedText>
+                        <ThemedText style={styles.detailValue}>{getFrequencyLabel(habit.frequency)}</ThemedText>
                     </View>
                     <View style={styles.detailRow}>
                         <ThemedText style={styles.detailLabel}>Renk:</ThemedText>
@@ -110,27 +142,75 @@ export default function HabitDetailScreen() {
                     </View>
                 </ThemedView>
 
-                {/* Son 7 Gün */}
-                {habit.history.length > 0 && (
-                    <ThemedView style={styles.section}>
-                        <ThemedText type="subtitle" style={styles.sectionTitle}>Son 7 Gün</ThemedText>
-                        <View style={styles.historyContainer}>
-                            {habit.history.map((day: any, index: number) => (
-                                <View key={index} style={styles.historyDay}>
-                                    <ThemedText style={styles.historyDate}>{day.date}</ThemedText>
-                                    <View
-                                        style={[
-                                            styles.historyIndicator,
-                                            day.completed ? styles.historyCompleted : styles.historyIncomplete,
-                                        ]}
-                                    >
-                                        {day.completed && <ThemedText style={styles.historyCheck}>✓</ThemedText>}
-                                    </View>
+                {/* Son 30 Gün Takvimi */}
+                <ThemedView style={styles.section}>
+                    <ThemedText type="subtitle" style={styles.sectionTitle}>Son 30 Gün</ThemedText>
+                    <View style={styles.calendarContainer}>
+                        {/* Gün başlıkları */}
+                        <View style={styles.weekDaysRow}>
+                            {['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'].map((day, index) => (
+                                <View key={index} style={styles.weekDayCell}>
+                                    <ThemedText style={styles.weekDayText}>{day}</ThemedText>
                                 </View>
                             ))}
                         </View>
-                    </ThemedView>
-                )}
+
+                        {/* Takvim günleri */}
+                        <View style={styles.calendarGrid}>
+                            {getLast30Days().map((day, index) => {
+                                const historyEntry = habit.history.find((h: any) => h.date === day.dateString);
+                                const isCompleted = historyEntry?.completed;
+                                const isFuture = day.isFuture;
+                                const isToday = day.isToday;
+
+                                return (
+                                    <View key={index} style={styles.calendarDayContainer}>
+                                        <View
+                                            style={[
+                                                styles.calendarDay,
+                                                isCompleted && styles.calendarDayCompleted,
+                                                !isCompleted && !isFuture && historyEntry && styles.calendarDayMissed,
+                                                isFuture && styles.calendarDayFuture,
+                                                isToday && styles.calendarDayToday,
+                                            ]}
+                                        >
+                                            <ThemedText
+                                                style={[
+                                                    styles.calendarDayText,
+                                                    isCompleted && styles.calendarDayTextCompleted,
+                                                    isFuture && styles.calendarDayTextFuture,
+                                                ]}
+                                            >
+                                                {day.day}
+                                            </ThemedText>
+                                        </View>
+                                        {isCompleted && (
+                                            <View style={styles.checkmarkContainer}>
+                                                <ThemedText style={styles.checkmark}>✓</ThemedText>
+                                            </View>
+                                        )}
+                                    </View>
+                                );
+                            })}
+                        </View>
+
+                        {/* Açıklama */}
+                        <View style={styles.legendContainer}>
+                            <View style={styles.legendItem}>
+                                <View style={[styles.legendIndicator, styles.calendarDayCompleted]} />
+                                <ThemedText style={styles.legendText}>Tamamlandı</ThemedText>
+                            </View>
+                            <View style={styles.legendItem}>
+                                <View style={[styles.legendIndicator, styles.calendarDayMissed]} />
+                                <ThemedText style={styles.legendText}>Kaçırıldı</ThemedText>
+                            </View>
+                            <View style={styles.legendItem}>
+                                <View style={[styles.legendIndicator, styles.calendarDayFuture]} />
+                                <ThemedText style={styles.legendText}>Gelecek</ThemedText>
+                            </View>
+                        </View>
+                    </View>
+                </ThemedView>
 
                 {/* Notlar Bölümü */}
                 <ThemedView style={styles.section}>
@@ -142,7 +222,7 @@ export default function HabitDetailScreen() {
             </ScrollView>
 
             {/* Sil Butonu */}
-            <TouchableOpacity style={styles.deleteButton}>
+            <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
                 <ThemedText style={styles.deleteButtonText}>Alışkanlığı Sil</ThemedText>
             </TouchableOpacity>
         </ThemedView>
@@ -286,5 +366,102 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         fontWeight: '600',
+    },
+    // Calendar styles
+    calendarContainer: {
+        gap: 16,
+    },
+    weekDaysRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        paddingBottom: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: '#e0e0e0',
+    },
+    weekDayCell: {
+        width: 40,
+        alignItems: 'center',
+    },
+    weekDayText: {
+        fontSize: 12,
+        fontWeight: '600',
+        opacity: 0.6,
+    },
+    calendarGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 4,
+    },
+    calendarDayContainer: {
+        width: '13.28%', // 7 days per week with gaps
+        aspectRatio: 1,
+        position: 'relative',
+    },
+    calendarDay: {
+        flex: 1,
+        borderRadius: 8,
+        backgroundColor: '#f5f5f5',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
+    },
+    calendarDayCompleted: {
+        backgroundColor: '#10B981',
+        borderColor: '#059669',
+    },
+    calendarDayMissed: {
+        backgroundColor: '#FEE2E2',
+        borderColor: '#EF4444',
+    },
+    calendarDayFuture: {
+        backgroundColor: '#fafafa',
+        borderColor: '#f0f0f0',
+    },
+    calendarDayToday: {
+        borderWidth: 2,
+        borderColor: '#3B82F6',
+    },
+    calendarDayText: {
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    calendarDayTextCompleted: {
+        color: '#fff',
+        fontWeight: 'bold',
+    },
+    calendarDayTextFuture: {
+        opacity: 0.3,
+    },
+    checkmarkContainer: {
+        position: 'absolute',
+        top: 2,
+        right: 2,
+    },
+    checkmark: {
+        fontSize: 10,
+        color: '#fff',
+    },
+    legendContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#e0e0e0',
+    },
+    legendItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    legendIndicator: {
+        width: 16,
+        height: 16,
+        borderRadius: 4,
+        borderWidth: 1,
+    },
+    legendText: {
+        fontSize: 12,
+        opacity: 0.7,
     },
 });
