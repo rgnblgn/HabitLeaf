@@ -1,112 +1,234 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { Collapsible } from '@/components/ui/collapsible';
-import { ExternalLink } from '@/components/external-link';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
+import { StyleSheet, ScrollView, TouchableOpacity, View, Switch } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Fonts } from '@/constants/theme';
+import { useState } from 'react';
+import { useRouter } from 'expo-router';
 
-export default function TabTwoScreen() {
+export default function SettingsScreen() {
+  const router = useRouter();
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [selectedLanguage, setSelectedLanguage] = useState('tr');
+
+  const languages = [
+    { code: 'tr', label: 'Türkçe' },
+    { code: 'en', label: 'English' },
+    { code: 'de', label: 'Deutsch' },
+  ];
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-          }}>
-          Explore
-        </ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image
-          source={require('@/assets/images/react-logo.png')}
-          style={{ width: 100, height: 100, alignSelf: 'center' }}
-        />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful{' '}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
-          </ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+    <ThemedView style={styles.container}>
+      <ScrollView style={styles.scrollView}>
+        {/* Header */}
+        <ThemedView style={styles.header}>
+          <ThemedText type="title">Ayarlar</ThemedText>
+        </ThemedView>
+
+        {/* Tema Ayarları */}
+        <ThemedView style={styles.section}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>Görünüm</ThemedText>
+
+          <View style={styles.settingRow}>
+            <View style={styles.settingLeft}>
+              <ThemedText style={styles.settingIcon}>🌙</ThemedText>
+              <View>
+                <ThemedText style={styles.settingLabel}>Karanlık Mod</ThemedText>
+                <ThemedText style={styles.settingDescription}>Gece temasını aktif et</ThemedText>
+              </View>
+            </View>
+            <Switch
+              value={isDarkMode}
+              onValueChange={setIsDarkMode}
+              trackColor={{ false: '#d0d0d0', true: '#3B82F6' }}
+            />
+          </View>
+        </ThemedView>
+
+        {/* Dil Ayarları */}
+        <ThemedView style={styles.section}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>Dil</ThemedText>
+
+          {languages.map((lang) => (
+            <TouchableOpacity
+              key={lang.code}
+              style={styles.settingRow}
+              onPress={() => setSelectedLanguage(lang.code)}
+            >
+              <View style={styles.settingLeft}>
+                <ThemedText style={styles.settingIcon}>🌍</ThemedText>
+                <ThemedText style={styles.settingLabel}>{lang.label}</ThemedText>
+              </View>
+              {selectedLanguage === lang.code && (
+                <ThemedText style={styles.checkmark}>✓</ThemedText>
+              )}
+            </TouchableOpacity>
+          ))}
+        </ThemedView>
+
+        {/* Bildirim Ayarları */}
+        <ThemedView style={styles.section}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>Bildirimler</ThemedText>
+
+          <View style={styles.settingRow}>
+            <View style={styles.settingLeft}>
+              <ThemedText style={styles.settingIcon}>🔔</ThemedText>
+              <View>
+                <ThemedText style={styles.settingLabel}>Bildirimler</ThemedText>
+                <ThemedText style={styles.settingDescription}>
+                  Günlük hatırlatmalar al
+                </ThemedText>
+              </View>
+            </View>
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={setNotificationsEnabled}
+              trackColor={{ false: '#d0d0d0', true: '#3B82F6' }}
+            />
+          </View>
+        </ThemedView>
+
+        {/* Hesap */}
+        <ThemedView style={styles.section}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>Hesap</ThemedText>
+
+          <TouchableOpacity
+            style={styles.settingRow}
+            onPress={() => router.push('/premium' as any)}
+          >
+            <View style={styles.settingLeft}>
+              <ThemedText style={styles.settingIcon}>👑</ThemedText>
+              <View>
+                <ThemedText style={styles.settingLabel}>Premium'a Geç</ThemedText>
+                <ThemedText style={styles.settingDescription}>
+                  Tüm özelliklerin kilidini aç
+                </ThemedText>
+              </View>
+            </View>
+            <ThemedText style={styles.arrow}>›</ThemedText>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.settingRow}>
+            <View style={styles.settingLeft}>
+              <ThemedText style={styles.settingIcon}>📊</ThemedText>
+              <ThemedText style={styles.settingLabel}>Verilerimi Dışa Aktar</ThemedText>
+            </View>
+            <ThemedText style={styles.arrow}>›</ThemedText>
+          </TouchableOpacity>
+        </ThemedView>
+
+        {/* Diğer */}
+        <ThemedView style={styles.section}>
+          <ThemedText type="subtitle" style={styles.sectionTitle}>Diğer</ThemedText>
+
+          <TouchableOpacity style={styles.settingRow}>
+            <View style={styles.settingLeft}>
+              <ThemedText style={styles.settingIcon}>❓</ThemedText>
+              <ThemedText style={styles.settingLabel}>Yardım & Destek</ThemedText>
+            </View>
+            <ThemedText style={styles.arrow}>›</ThemedText>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.settingRow}>
+            <View style={styles.settingLeft}>
+              <ThemedText style={styles.settingIcon}>⭐</ThemedText>
+              <ThemedText style={styles.settingLabel}>Uygulamayı Oyla</ThemedText>
+            </View>
+            <ThemedText style={styles.arrow}>›</ThemedText>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.settingRow}>
+            <View style={styles.settingLeft}>
+              <ThemedText style={styles.settingIcon}>📄</ThemedText>
+              <ThemedText style={styles.settingLabel}>Gizlilik Politikası</ThemedText>
+            </View>
+            <ThemedText style={styles.arrow}>›</ThemedText>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.settingRow}>
+            <View style={styles.settingLeft}>
+              <ThemedText style={styles.settingIcon}>ℹ️</ThemedText>
+              <ThemedText style={styles.settingLabel}>Hakkında</ThemedText>
+            </View>
+            <ThemedText style={styles.arrow}>›</ThemedText>
+          </TouchableOpacity>
+        </ThemedView>
+
+        {/* Versiyon */}
+        <ThemedView style={styles.versionContainer}>
+          <ThemedText style={styles.versionText}>HabitLeaf v1.0.0</ThemedText>
+        </ThemedView>
+      </ScrollView>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  container: {
+    flex: 1,
   },
-  titleContainer: {
+  scrollView: {
+    flex: 1,
+  },
+  header: {
+    padding: 20,
+    paddingTop: 60,
+  },
+  section: {
+    marginTop: 20,
+    paddingHorizontal: 20,
+  },
+  sectionTitle: {
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  settingRow: {
     flexDirection: 'row',
-    gap: 8,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    marginBottom: 8,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  settingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  settingIcon: {
+    fontSize: 24,
+  },
+  settingLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  settingDescription: {
+    fontSize: 13,
+    opacity: 0.6,
+    marginTop: 2,
+  },
+  checkmark: {
+    fontSize: 20,
+    color: '#3B82F6',
+    fontWeight: 'bold',
+  },
+  arrow: {
+    fontSize: 24,
+    color: '#d0d0d0',
+    fontWeight: '300',
+  },
+  versionContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  versionText: {
+    fontSize: 14,
+    opacity: 0.4,
   },
 });
