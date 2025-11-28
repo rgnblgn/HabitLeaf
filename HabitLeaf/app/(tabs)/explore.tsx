@@ -1,8 +1,9 @@
-import { StyleSheet, ScrollView, TouchableOpacity, View, Switch } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, View, Switch, Alert } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -15,6 +16,29 @@ export default function SettingsScreen() {
     { code: 'en', label: 'English' },
     { code: 'de', label: 'Deutsch' },
   ];
+
+  const handleResetOnboarding = async () => {
+    Alert.alert(
+      'Onboarding\'i Sıfırla',
+      'Uygulama yeniden başlatıldığında onboarding ekranları gösterilecek. Devam etmek istiyor musunuz?',
+      [
+        { text: 'İptal', style: 'cancel' },
+        {
+          text: 'Sıfırla',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.removeItem('onboarding_completed');
+              Alert.alert('Başarılı', 'Onboarding sıfırlandı. Uygulamayı yeniden başlatın.');
+            } catch (error) {
+              console.error('Error resetting onboarding:', error);
+              Alert.alert('Hata', 'Onboarding sıfırlanırken bir hata oluştu.');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <ThemedView style={styles.container}>
@@ -119,6 +143,14 @@ export default function SettingsScreen() {
         {/* Diğer */}
         <ThemedView style={styles.section}>
           <ThemedText type="subtitle" style={styles.sectionTitle}>Diğer</ThemedText>
+
+          <TouchableOpacity style={styles.settingRow} onPress={handleResetOnboarding}>
+            <View style={styles.settingLeft}>
+              <ThemedText style={styles.settingIcon}>🔄</ThemedText>
+              <ThemedText style={styles.settingLabel}>Onboarding'i Sıfırla</ThemedText>
+            </View>
+            <ThemedText style={styles.arrow}>›</ThemedText>
+          </TouchableOpacity>
 
           <TouchableOpacity style={styles.settingRow}>
             <View style={styles.settingLeft}>

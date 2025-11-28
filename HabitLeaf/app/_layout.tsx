@@ -1,9 +1,11 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { Provider } from 'react-redux';
 import { store } from '@/store/store';
+import { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -17,12 +19,63 @@ export default function RootLayout() {
   return (
     <Provider store={store}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-        </Stack>
+        <RootNavigator />
         <StatusBar style="auto" />
       </ThemeProvider>
     </Provider>
+  );
+}
+
+function RootNavigator() {
+  const [isReady, setIsReady] = useState(false);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const router = useRouter();
+  const segments = useSegments();
+
+  useEffect(() => {
+    checkOnboardingStatus();
+  }, []);
+
+  const checkOnboardingStatus = async () => {
+    try {
+      const completed = await AsyncStorage.getItem('onboarding_completed');
+      console.log('Onboarding status checked:', completed);
+      setHasCompletedOnboarding(completed === 'true');
+      setIsReady(true);
+    } catch (error) {
+      console.error('Error checking onboarding status:', error);
+      setIsReady(true);
+    }
+  };
+
+  useEffect(() => {
+    if (!isReady) return;
+
+    const inOnboarding = segments[0] === 'onboarding';
+    const inTabs = segments[0] === '(tabs)';
+
+    console.log('Navigation guard:', { hasCompletedOnboarding, inOnboarding, inTabs, segments });
+
+    // Sadece onboarding tamamlanmamışsa ve onboarding'de değilsek yönlendir
+    if (!hasCompletedOnboarding && !inOnboarding) {
+      console.log('Navigating to onboarding...');
+      router.replace('/onboarding/welcome' as any);
+    }
+    // Diğer durumlarda müdahale etme, router'ın kendi işini yapmasına izin ver
+  }, [isReady, hasCompletedOnboarding]);
+
+  if (!isReady) {
+    return null; // Splash screen burada gösterilebilir
+  }
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="onboarding" />
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+      <Stack.Screen name="add-habit" options={{ presentation: 'modal', title: 'Alışkanlık Ekle' }} />
+      <Stack.Screen name="habit-detail" options={{ presentation: 'modal', title: 'Detay' }} />
+      <Stack.Screen name="premium" options={{ presentation: 'modal', title: 'Premium' }} />
+    </Stack>
   );
 }
