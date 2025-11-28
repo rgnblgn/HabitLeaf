@@ -8,6 +8,7 @@ import { Colors, Spacing, BorderRadius, Shadows, Typography } from '@/constants/
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { toggleHabit } from '@/store/habitsSlice';
+import ConfettiCannon from 'react-native-confetti-cannon';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -18,18 +19,53 @@ export default function HomeScreen() {
   // Redux'tan alışkanlıkları al
   const habits = useAppSelector((state) => state.habits.habits);
   const progressAnim = useRef(new Animated.Value(0)).current;
+  const prevProgressRef = useRef(0);
+  const confettiRef = useRef<any>(null);
+  const hasShownConfetti = useRef(false);
 
   const completedCount = habits.filter(h => h.completed).length;
   const progressPercentage = habits.length > 0 ? (completedCount / habits.length) * 100 : 0;
+  const allCompleted = habits.length > 0 && completedCount === habits.length;
+
+  // En yüksek streak'e sahip alışkanlığı bul
+  const topStreakHabit = habits.length > 0
+    ? habits.reduce((max, habit) =>
+      (habit.streak > max.streak) ? habit : max
+    )
+    : null;
 
   useEffect(() => {
-    Animated.spring(progressAnim, {
-      toValue: progressPercentage,
-      useNativeDriver: false,
-      tension: 50,
-      friction: 7,
-    }).start();
+    const prevProgress = prevProgressRef.current;
+
+    // Animasyonu iptal et ve direkt değere git eğer:
+    // 1. Önceki değer 100'e yakınsa (>95) ve yeni değer 0'a yakınsa (<5)
+    // 2. Veya tam tersi durum
+    if ((prevProgress > 95 && progressPercentage < 5) || (prevProgress < 5 && progressPercentage > 95)) {
+      progressAnim.setValue(progressPercentage);
+      prevProgressRef.current = progressPercentage;
+    } else {
+      Animated.spring(progressAnim, {
+        toValue: progressPercentage,
+        useNativeDriver: false,
+        tension: 50,
+        friction: 7,
+      }).start();
+      prevProgressRef.current = progressPercentage;
+    }
   }, [progressPercentage]);
+
+  // Konfeti animasyonu
+  useEffect(() => {
+    if (allCompleted && !hasShownConfetti.current) {
+      // 150ms gecikme ile konfeti patlat (animasyon tamamlansın diye)
+      setTimeout(() => {
+        confettiRef.current?.start();
+      }, 150);
+      hasShownConfetti.current = true;
+    } else if (!allCompleted) {
+      hasShownConfetti.current = false;
+    }
+  }, [allCompleted]);
 
   const handleToggleHabit = (id: string) => {
     dispatch(toggleHabit(id));
@@ -61,10 +97,12 @@ export default function HomeScreen() {
               <Text style={styles.headerTitle}>Bugün</Text>
               <Text style={styles.date}>26 Kasım 2025</Text>
             </View>
-            <TouchableOpacity style={styles.streakBadge}>
-              <Text style={styles.streakIcon}>🔥</Text>
-              <Text style={styles.streakText}>12</Text>
-            </TouchableOpacity>
+            {topStreakHabit && topStreakHabit.streak > 0 && (
+              <View style={[styles.streakBadge, { backgroundColor: topStreakHabit.color + '40' }]}>
+                <Text style={styles.streakIcon}>🔥</Text>
+                <Text style={styles.streakText}>{topStreakHabit.streak}</Text>
+              </View>
+            )}
           </View>
         </LinearGradient>
 
@@ -121,8 +159,12 @@ export default function HomeScreen() {
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>12</Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Seri</Text>
+              <Text style={styles.statValue}>
+                {topStreakHabit ? topStreakHabit.streak : 0}
+              </Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
+                En İyi Seri
+              </Text>
             </View>
           </View>
         </View>
@@ -146,8 +188,8 @@ export default function HomeScreen() {
                 Shadows.small,
                 { backgroundColor: theme.cardBackground },
               ]}
-              onPress={() => router.push(`/habit-detail?id=${habit.id}`)}
-              activeOpacity={0.7}
+              onPress={() => handleToggleHabit(habit.id)}
+              activeOpacity={0.6}
             >
               <View style={[styles.habitIconContainer, { backgroundColor: habit.color + '20' }]}>
                 <Text style={styles.habitIcon}>{habit.icon}</Text>
@@ -160,20 +202,25 @@ export default function HomeScreen() {
                 </Text>
               </View>
 
-              <TouchableOpacity
-                style={[
-                  styles.checkbox,
-                  habit.completed && { backgroundColor: habit.color, borderColor: habit.color },
-                  !habit.completed && { borderColor: theme.border },
-                ]}
-                onPress={(e) => {
-                  e.stopPropagation();
-                  handleToggleHabit(habit.id);
-                }}
-              >
+              <View style={[
+                styles.checkbox,
+                habit.completed && { backgroundColor: habit.color, borderColor: habit.color },
+                !habit.completed && { borderColor: theme.border },
+              ]}>
                 {habit.completed && (
                   <Text style={styles.checkmark}>✓</Text>
                 )}
+              </View>
+
+              <TouchableOpacity
+                style={styles.detailButton}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  router.push(`/habit-detail?id=${habit.id}`);
+                }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={[styles.detailIcon, { color: theme.textSecondary }]}>›</Text>
               </TouchableOpacity>
             </TouchableOpacity>
           ))}
@@ -208,6 +255,18 @@ export default function HomeScreen() {
           <Text style={styles.addButtonText}>Yeni Alışkanlık</Text>
         </LinearGradient>
       </TouchableOpacity>
+
+      {/* Konfeti - En üstte */}
+      {allCompleted && (
+        <ConfettiCannon
+          ref={confettiRef}
+          count={200}
+          origin={{ x: -10, y: 0 }}
+          autoStart={false}
+          fadeOut={true}
+          fallSpeed={2500}
+        />
+      )}
     </ThemedView>
   );
 }
@@ -250,13 +309,12 @@ const styles = StyleSheet.create({
     opacity: 0.8,
   },
   streakBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.xs,
+    gap: 6,
   },
   streakIcon: {
     fontSize: 20,
@@ -397,6 +455,16 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 18,
     fontWeight: '700',
+  },
+  detailButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginLeft: 4,
+  },
+  detailIcon: {
+    fontSize: 32,
+    fontWeight: '300',
+    marginTop: -4,
   },
   emptyState: {
     alignItems: 'center',

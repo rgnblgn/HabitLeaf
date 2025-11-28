@@ -10,6 +10,8 @@ export interface Habit {
     streak: number;
     totalCompleted: number;
     createdDate: string;
+    notificationTime?: string; // Format: "HH:mm"
+    notificationEnabled?: boolean;
     history: {
         date: string;
         completed: boolean;
@@ -23,52 +25,7 @@ interface HabitsState {
 }
 
 const initialState: HabitsState = {
-    habits: [
-        {
-            id: '1',
-            name: 'Su İç',
-            color: '#3B82F6',
-            icon: '💧',
-            frequency: 'daily',
-            completed: false,
-            streak: 12,
-            totalCompleted: 45,
-            createdDate: '14 Kasım 2025',
-            history: [
-                { date: '26 Kas', completed: false },
-                { date: '25 Kas', completed: true },
-                { date: '24 Kas', completed: true },
-                { date: '23 Kas', completed: true },
-                { date: '22 Kas', completed: false },
-                { date: '21 Kas', completed: true },
-                { date: '20 Kas', completed: true },
-            ],
-        },
-        {
-            id: '2',
-            name: 'Spor Yap',
-            color: '#10B981',
-            icon: '🏃',
-            frequency: 'daily',
-            completed: true,
-            streak: 7,
-            totalCompleted: 28,
-            createdDate: '19 Kasım 2025',
-            history: [],
-        },
-        {
-            id: '3',
-            name: 'Kitap Oku',
-            color: '#8B5CF6',
-            icon: '📚',
-            frequency: 'daily',
-            completed: false,
-            streak: 3,
-            totalCompleted: 15,
-            createdDate: '23 Kasım 2025',
-            history: [],
-        },
-    ],
+    habits: [],
     loading: false,
     error: null,
 };
