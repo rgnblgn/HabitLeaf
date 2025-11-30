@@ -1,10 +1,12 @@
-import { configureStore } from '@reduxjs/toolkit';
-import habitsReducer from './habitsSlice';
+import { configureStore } from "@reduxjs/toolkit";
+import habitsReducer from "./habitsSlice";
+import languageReducer from "./languageSlice";
 
 export const store = configureStore({
-    reducer: {
-        habits: habitsReducer,
-    },
+  reducer: {
+    habits: habitsReducer,
+    language: languageReducer,
+  },
 });
 
 export type RootState = ReturnType<typeof store.getState>;
