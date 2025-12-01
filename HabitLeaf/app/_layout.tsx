@@ -6,6 +6,9 @@ import { Provider } from 'react-redux';
 import { store } from '@/store/store';
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { setThemePalette } from '@/store/themeSlice';
+import { setLanguage } from '@/store/languageSlice';
+import { setPremium } from '@/store/premiumSlice';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
@@ -15,6 +18,32 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+
+  // Load persisted settings on app start
+  useEffect(() => {
+    const loadPersistedSettings = async () => {
+      try {
+        const savedPalette = await AsyncStorage.getItem('app_theme_palette');
+        if (savedPalette) {
+          store.dispatch(setThemePalette(savedPalette));
+        }
+
+        const savedLanguage = await AsyncStorage.getItem('app_language');
+        if (savedLanguage && (savedLanguage === 'tr' || savedLanguage === 'en' || savedLanguage === 'de')) {
+          store.dispatch(setLanguage(savedLanguage as any));
+        }
+
+        const savedPremium = await AsyncStorage.getItem('premium_status');
+        if (savedPremium === 'true') {
+          store.dispatch(setPremium(true));
+        }
+      } catch (error) {
+        console.error('Error loading persisted settings:', error);
+      }
+    };
+
+    loadPersistedSettings();
+  }, []);
 
   return (
     <Provider store={store}>

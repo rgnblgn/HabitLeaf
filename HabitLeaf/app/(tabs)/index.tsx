@@ -12,13 +12,12 @@ import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
 import { LinearGradient } from "expo-linear-gradient";
 import {
-  Colors,
   Spacing,
   BorderRadius,
   Shadows,
   Typography,
 } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useThemedColors } from "@/hooks/use-themed-colors";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { toggleHabit } from "@/store/habitsSlice";
 import ConfettiCannon from "react-native-confetti-cannon";
@@ -26,8 +25,7 @@ import { useTranslation } from "@/hooks/use-translation";
 
 export default function HomeScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme ?? "light"];
+  const theme = useThemedColors();
   const dispatch = useAppDispatch();
   const { t, currentLanguage } = useTranslation();
 
@@ -204,8 +202,8 @@ export default function HomeScreen() {
                 {completedCount === habits.length && habits.length > 0
                   ? t("home.allDoneMessage")
                   : t("home.habitsRemaining", {
-                      count: habits.length - completedCount,
-                    })}
+                    count: habits.length - completedCount,
+                  })}
               </Text>
             </View>
             <View style={styles.progressCircle}>

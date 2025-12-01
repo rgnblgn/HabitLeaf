@@ -4,7 +4,8 @@ import { router, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing, BorderRadius, Shadows } from '@/constants/theme';
+import { Spacing, BorderRadius, Shadows } from '@/constants/theme';
+import { useThemedColors } from '@/hooks/use-themed-colors';
 
 const timeSlots = [
     { time: '09:00', icon: '🌅', label: 'Sabah' },
@@ -13,6 +14,7 @@ const timeSlots = [
 ];
 
 export default function MotivationScreen() {
+    const Colors = useThemedColors();
     const [selectedTime, setSelectedTime] = useState('09:00');
     const routerHook = useRouter();
 
@@ -94,7 +96,7 @@ export default function MotivationScreen() {
 
     return (
         <LinearGradient
-            colors={[Colors.light.gradientStart, Colors.light.gradientEnd]}
+            colors={[Colors.gradientStart, Colors.gradientEnd]}
             style={styles.container}
         >
             <SafeAreaView style={styles.safeArea}>
@@ -166,7 +168,7 @@ export default function MotivationScreen() {
                             activeOpacity={0.8}
                         >
                             <LinearGradient
-                                colors={[Colors.light.primary, Colors.light.secondary]}
+                                colors={[Colors.primary, Colors.secondary]}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 0 }}
                                 style={styles.buttonGradient}

@@ -3,9 +3,11 @@ import { View, StyleSheet, TouchableOpacity, Animated, SafeAreaView } from 'reac
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing, BorderRadius, Shadows } from '@/constants/theme';
+import { Spacing, BorderRadius, Shadows } from '@/constants/theme';
+import { useThemedColors } from '@/hooks/use-themed-colors';
 
 export default function WelcomeScreen() {
+    const Colors = useThemedColors();
     // Animasyonlar
     const leafScale = useRef(new Animated.Value(0.5)).current;
     const leafRotate = useRef(new Animated.Value(0)).current;
@@ -45,7 +47,7 @@ export default function WelcomeScreen() {
 
     return (
         <LinearGradient
-            colors={[Colors.light.gradientStart, Colors.light.gradientEnd]}
+            colors={[Colors.gradientStart, Colors.gradientEnd]}
             style={styles.container}
         >
             <SafeAreaView style={styles.safeArea}>
@@ -85,7 +87,7 @@ export default function WelcomeScreen() {
                             activeOpacity={0.8}
                         >
                             <LinearGradient
-                                colors={[Colors.light.primary, Colors.light.secondary]}
+                                colors={[Colors.primary, Colors.secondary]}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 0 }}
                                 style={styles.buttonGradient}

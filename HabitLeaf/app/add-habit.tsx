@@ -11,8 +11,8 @@ import { ThemedView } from "@/components/themed-view";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { LinearGradient } from "expo-linear-gradient";
-import { Colors, Spacing, BorderRadius, Shadows } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Spacing, BorderRadius, Shadows } from "@/constants/theme";
+import { useThemedColors } from "@/hooks/use-themed-colors";
 import { useAppDispatch } from "@/store/hooks";
 import { addHabit } from "@/store/habitsSlice";
 import { notificationService } from "@/services/notificationService";
@@ -46,8 +46,7 @@ const ICONS = [
 
 export default function AddHabitScreen() {
   const router = useRouter();
-  const colorScheme = useColorScheme();
-  const theme = Colors[colorScheme ?? "light"];
+  const theme = useThemedColors();
   const dispatch = useAppDispatch();
   const { t } = useTranslation();
 
@@ -72,15 +71,15 @@ export default function AddHabitScreen() {
     value: "daily" | "weekly" | "monthly";
     icon: string;
   }> = [
-    { id: "daily", label: t("addHabit.daily"), value: "daily", icon: "📅" },
-    { id: "weekly", label: t("addHabit.weekly"), value: "weekly", icon: "📆" },
-    {
-      id: "monthly",
-      label: t("addHabit.monthly"),
-      value: "monthly",
-      icon: "🗓️",
-    },
-  ];
+      { id: "daily", label: t("addHabit.daily"), value: "daily", icon: "📅" },
+      { id: "weekly", label: t("addHabit.weekly"), value: "weekly", icon: "📆" },
+      {
+        id: "monthly",
+        label: t("addHabit.monthly"),
+        value: "monthly",
+        icon: "🗓️",
+      },
+    ];
 
   const handleSave = async () => {
     if (!name.trim()) {

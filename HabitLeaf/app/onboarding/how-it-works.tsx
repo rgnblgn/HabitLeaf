@@ -3,7 +3,8 @@ import { View, StyleSheet, TouchableOpacity, Animated, ScrollView, SafeAreaView 
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing, BorderRadius, Shadows } from '@/constants/theme';
+import { Spacing, BorderRadius, Shadows } from '@/constants/theme';
+import { useThemedColors } from '@/hooks/use-themed-colors';
 
 const features = [
     {
@@ -24,6 +25,7 @@ const features = [
 ];
 
 export default function HowItWorksScreen() {
+    const Colors = useThemedColors();
     // Animasyonlar
     const iconAnimations = useRef(
         features.map(() => new Animated.Value(0))
@@ -59,7 +61,7 @@ export default function HowItWorksScreen() {
 
     return (
         <LinearGradient
-            colors={[Colors.light.gradientStart, Colors.light.gradientEnd]}
+            colors={[Colors.gradientStart, Colors.gradientEnd]}
             style={styles.container}
         >
             <SafeAreaView style={styles.safeArea}>
@@ -119,7 +121,7 @@ export default function HowItWorksScreen() {
                             activeOpacity={0.8}
                         >
                             <LinearGradient
-                                colors={[Colors.light.primary, Colors.light.secondary]}
+                                colors={[Colors.primary, Colors.secondary]}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 0 }}
                                 style={styles.buttonGradient}

@@ -2,6 +2,9 @@ import { StyleSheet, ScrollView, TouchableOpacity, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAppDispatch } from '@/store/hooks';
+import { setPremium } from '@/store/premiumSlice';
 
 const premiumFeatures = [
     {
@@ -73,6 +76,18 @@ const pricingPlans = [
 
 export default function PremiumScreen() {
     const router = useRouter();
+    const dispatch = useAppDispatch();
+
+    const handleUpgrade = async () => {
+        try {
+            // Premium satın alma simülasyonu
+            await AsyncStorage.setItem('premium_status', 'true');
+            dispatch(setPremium(true));
+            router.back();
+        } catch (error) {
+            console.error('Error upgrading to premium:', error);
+        }
+    };
 
     return (
         <ThemedView style={styles.container}>
@@ -179,7 +194,7 @@ export default function PremiumScreen() {
 
             {/* CTA Button */}
             <View style={styles.ctaContainer}>
-                <TouchableOpacity style={styles.ctaButton}>
+                <TouchableOpacity style={styles.ctaButton} onPress={handleUpgrade}>
                     <ThemedText style={styles.ctaButtonText}>Premium'a Başla</ThemedText>
                 </TouchableOpacity>
                 <ThemedText style={styles.termsText}>
