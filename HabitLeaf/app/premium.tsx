@@ -1,4 +1,4 @@
-import { StyleSheet, ScrollView, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, View, Alert, ActivityIndicator, Platform } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useRouter } from 'expo-router';
@@ -7,7 +7,7 @@ import { useAppDispatch } from '@/store/hooks';
 import { setPremium } from '@/store/premiumSlice';
 import { useState, useEffect } from 'react';
 import { getLocales } from 'expo-localization';
-import { detectRegion, getPricingPlans, fetchPlayStorePrices, clearCachedPrices, type Region } from '@/utils/pricing';
+import { detectRegion, getPricingPlans, fetchPlayStorePrices, clearCachedPrices, PRODUCT_SKUS, type Region } from '@/utils/pricing';
 
 const premiumFeatures = [
     {
@@ -31,16 +31,6 @@ const premiumFeatures = [
         description: 'Kişiselleştirilmiş bildirimler',
     },
     {
-        icon: '📝',
-        title: 'Sınırsız Notlar',
-        description: 'Her alışkanlığa not ve hedef ekleyin',
-    },
-    {
-        icon: '🏆',
-        title: 'Rozetler & Ödüller',
-        description: 'Başarılarınızı kutlayın',
-    },
-    {
         icon: '📈',
         title: 'Alışkanlık Analizi',
         description: 'AI destekli içgörüler',
@@ -58,6 +48,7 @@ export default function PremiumScreen() {
     const [region, setRegion] = useState<Region>('US');
     const [pricingPlans, setPricingPlans] = useState(getPricingPlans('US'));
     const [selectedPlan, setSelectedPlan] = useState<string | null>('yearly');
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         // Detect user's region from device locale
@@ -82,26 +73,96 @@ export default function PremiumScreen() {
     }, []);
 
     const handleUpgrade = async () => {
+        if (!selectedPlan) {
+            Alert.alert('Hata', 'Lütfen bir plan seçin');
+            return;
+        }
+
+        setIsLoading(true);
         try {
-            // Premium satın alma simülasyonu
-            await AsyncStorage.setItem('premium_status', 'true');
-            dispatch(setPremium(true));
-            router.back();
-        } catch (error) {
-            console.error('Error upgrading to premium:', error);
+            const sku = PRODUCT_SKUS[selectedPlan as keyof typeof PRODUCT_SKUS];
+            console.log('Starting purchase for SKU:', sku);
+
+            if (Platform.OS === 'android') {
+                try {
+                    let RNIap;
+                    try {
+                        RNIap = require('react-native-iap').default;
+                    } catch (e) {
+                        console.warn('react-native-iap not available (normal in Expo Go):', e);
+                        RNIap = null;
+                    }
+
+                    if (!RNIap) {
+                        // Expo Go veya native module desteklenmiyor - test modu
+                        console.log('Using fallback test mode');
+                        Alert.alert(
+                            'Test Modu',
+                            'Expo Go\'da IAP çalışmıyor. APK build\'i indirip test edebilirsin.\n\nŞimdi test modu etkinleştirilsin mi?',
+                            [
+                                {
+                                    text: 'İptal',
+                                    onPress: () => { },
+                                    style: 'cancel',
+                                },
+                                {
+                                    text: 'Test Modu Aç',
+                                    onPress: async () => {
+                                        await AsyncStorage.setItem('premium_status', 'true');
+                                        await AsyncStorage.setItem('purchase_sku', sku);
+                                        await AsyncStorage.setItem('purchase_date', new Date().toISOString());
+                                        dispatch(setPremium(true));
+                                        Alert.alert('Başarılı!', 'Premium üyeliğiniz TEST MODU\'nda etkinleştirildi.', [
+                                            { text: 'Tamam', onPress: () => router.back() },
+                                        ]);
+                                    },
+                                },
+                            ]
+                        );
+                        return;
+                    }
+
+                    await RNIap.initConnection();
+                    const purchaseResult = await RNIap.requestPurchase({ sku });
+                    console.log('Purchase result:', purchaseResult);
+
+                    if (purchaseResult) {
+                        await AsyncStorage.setItem('premium_status', 'true');
+                        await AsyncStorage.setItem('purchase_sku', sku);
+                        await AsyncStorage.setItem('purchase_date', new Date().toISOString());
+                        dispatch(setPremium(true));
+
+                        Alert.alert('Başarılı!', 'Premium üyeliğiniz etkinleştirildi.', [
+                            { text: 'Tamam', onPress: () => router.back() },
+                        ]);
+                    }
+                } catch (iapError: any) {
+                    console.error('IAP Error:', iapError);
+                    if (iapError.code === 'E_USER_CANCELLED') {
+                        console.log('User cancelled purchase');
+                    } else {
+                        Alert.alert('Satın Alma Hatası', iapError.message || 'Bir hata oluştu. Lütfen tekrar deneyin.');
+                    }
+                }
+            } else {
+                Alert.alert('Uyarı', 'Satın alma şu anda bu cihazda desteklenmiyor.');
+            }
+        } catch (error: any) {
+            console.error('Error:', error);
+            Alert.alert('Hata', 'Satın alma işlemi sırasında hata oluştu.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
     const handlePlanSelect = (plan: typeof pricingPlans[0]) => {
         console.log('Selected plan:', plan);
         setSelectedPlan(plan.id);
-        // Just select, don't upgrade yet - user will click the main CTA button
     };
 
     const handleClearCache = async () => {
         try {
             await clearCachedPrices();
-            // Reload prices from Play Store
             const prices = await fetchPlayStorePrices(region);
             setPricingPlans(prices);
             console.log('Cache cleared and prices reloaded');
@@ -188,47 +249,22 @@ export default function PremiumScreen() {
                     ))}
                 </ThemedView>
 
-                {/* Testimonials */}
-                <ThemedView style={styles.testimonialsSection}>
-                    <ThemedText type="subtitle" style={styles.sectionTitle}>
-                        Kullanıcılarımız Ne Diyor?
-                    </ThemedText>
-                    <View style={styles.testimonialCard}>
-                        <ThemedText style={styles.testimonialStars}>⭐⭐⭐⭐⭐</ThemedText>
-                        <ThemedText style={styles.testimonialText}>
-                            "Premium'a geçtiğimden beri hayatım değişti. İstatistikler motivasyonumu artırıyor!"
-                        </ThemedText>
-                        <ThemedText style={styles.testimonialAuthor}>- Ahmet Y.</ThemedText>
-                    </View>
-                    <View style={styles.testimonialCard}>
-                        <ThemedText style={styles.testimonialStars}>⭐⭐⭐⭐⭐</ThemedText>
-                        <ThemedText style={styles.testimonialText}>
-                            "Bulut yedekleme özelliği harika. Tüm cihazlarımda verilerim senkron."
-                        </ThemedText>
-                        <ThemedText style={styles.testimonialAuthor}>- Zeynep K.</ThemedText>
-                    </View>
-                </ThemedView>
-
-                {/* Money Back Guarantee */}
-                <ThemedView style={styles.guaranteeSection}>
-                    <ThemedText style={styles.guaranteeIcon}>💯</ThemedText>
-                    <ThemedText style={styles.guaranteeTitle}>7 Gün Para İade Garantisi</ThemedText>
-                    <ThemedText style={styles.guaranteeText}>
-                        Memnun kalmazsan 7 gün içinde tam iade
-                    </ThemedText>
-                </ThemedView>
             </ScrollView>
 
             {/* CTA Button */}
             <View style={styles.ctaContainer}>
                 <TouchableOpacity
-                    style={[styles.ctaButton, !selectedPlan && styles.ctaButtonDisabled]}
+                    style={[styles.ctaButton, (!selectedPlan || isLoading) && styles.ctaButtonDisabled]}
                     onPress={handleUpgrade}
-                    disabled={!selectedPlan}
+                    disabled={!selectedPlan || isLoading}
                 >
-                    <ThemedText style={styles.ctaButtonText}>
-                        {selectedPlan ? 'Premium\'a Başla' : 'Bir Plan Seçin'}
-                    </ThemedText>
+                    {isLoading ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                        <ThemedText style={styles.ctaButtonText}>
+                            {selectedPlan ? 'Premium\'a Başla' : 'Bir Plan Seçin'}
+                        </ThemedText>
+                    )}
                 </TouchableOpacity>
                 <ThemedText style={styles.termsText}>
                     Devam ederek Kullanım Şartları'nı kabul etmiş olursunuz
