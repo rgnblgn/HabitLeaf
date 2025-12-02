@@ -5,6 +5,9 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAppDispatch } from '@/store/hooks';
 import { setPremium } from '@/store/premiumSlice';
+import { useState, useEffect } from 'react';
+import { getLocales } from 'expo-localization';
+import { detectRegion, getPricingPlans, fetchPlayStorePrices, clearCachedPrices, type Region } from '@/utils/pricing';
 
 const premiumFeatures = [
     {
@@ -49,34 +52,34 @@ const premiumFeatures = [
     },
 ];
 
-const pricingPlans = [
-    {
-        id: 'monthly',
-        name: 'Aylık',
-        price: '49.99 TL',
-        period: 'ay',
-        badge: null,
-    },
-    {
-        id: 'yearly',
-        name: 'Yıllık',
-        price: '399.99 TL',
-        period: 'yıl',
-        badge: '%33 İndirim',
-        recommended: true,
-    },
-    {
-        id: 'lifetime',
-        name: 'Ömür Boyu',
-        price: '999.99 TL',
-        period: 'tek seferlik',
-        badge: 'En İyi Değer',
-    },
-];
-
 export default function PremiumScreen() {
     const router = useRouter();
     const dispatch = useAppDispatch();
+    const [region, setRegion] = useState<Region>('US');
+    const [pricingPlans, setPricingPlans] = useState(getPricingPlans('US'));
+    const [selectedPlan, setSelectedPlan] = useState<string | null>('yearly');
+
+    useEffect(() => {
+        // Detect user's region from device locale
+        const locales = getLocales();
+        const userLocale = locales[0]?.languageCode || 'en';
+        const detectedRegion = detectRegion(userLocale);
+        setRegion(detectedRegion);
+
+        // Fetch prices from Play Store (or use fallback)
+        const loadPrices = async () => {
+            try {
+                const prices = await fetchPlayStorePrices(detectedRegion);
+                setPricingPlans(prices);
+            } catch (error) {
+                console.error('Error loading prices:', error);
+                // Use fallback prices if fetch fails
+                setPricingPlans(getPricingPlans(detectedRegion));
+            }
+        };
+
+        loadPrices();
+    }, []);
 
     const handleUpgrade = async () => {
         try {
@@ -89,11 +92,32 @@ export default function PremiumScreen() {
         }
     };
 
+    const handlePlanSelect = (plan: typeof pricingPlans[0]) => {
+        console.log('Selected plan:', plan);
+        setSelectedPlan(plan.id);
+        // Just select, don't upgrade yet - user will click the main CTA button
+    };
+
+    const handleClearCache = async () => {
+        try {
+            await clearCachedPrices();
+            // Reload prices from Play Store
+            const prices = await fetchPlayStorePrices(region);
+            setPricingPlans(prices);
+            console.log('Cache cleared and prices reloaded');
+        } catch (error) {
+            console.error('Error clearing cache:', error);
+        }
+    };
+
     return (
         <ThemedView style={styles.container}>
             <ScrollView style={styles.scrollView}>
                 {/* Header */}
                 <ThemedView style={styles.header}>
+                    <TouchableOpacity onPress={handleClearCache} style={styles.refreshButton}>
+                        <ThemedText style={styles.refreshText}>🔄</ThemedText>
+                    </TouchableOpacity>
                     <TouchableOpacity onPress={() => router.back()} style={styles.closeButton}>
                         <ThemedText style={styles.closeText}>✕</ThemedText>
                     </TouchableOpacity>
@@ -139,8 +163,9 @@ export default function PremiumScreen() {
                             key={plan.id}
                             style={[
                                 styles.pricingCard,
-                                plan.recommended && styles.recommendedCard,
+                                selectedPlan === plan.id && styles.selectedCard,
                             ]}
+                            onPress={() => handlePlanSelect(plan)}
                         >
                             {plan.badge && (
                                 <View style={styles.badge}>
@@ -154,7 +179,9 @@ export default function PremiumScreen() {
                                 )}
                             </View>
                             <View style={styles.pricingContent}>
-                                <ThemedText style={styles.price}>{plan.price}</ThemedText>
+                                <ThemedText style={styles.price}>
+                                    {plan.price}
+                                </ThemedText>
                                 <ThemedText style={styles.period}>/ {plan.period}</ThemedText>
                             </View>
                         </TouchableOpacity>
@@ -194,8 +221,14 @@ export default function PremiumScreen() {
 
             {/* CTA Button */}
             <View style={styles.ctaContainer}>
-                <TouchableOpacity style={styles.ctaButton} onPress={handleUpgrade}>
-                    <ThemedText style={styles.ctaButtonText}>Premium'a Başla</ThemedText>
+                <TouchableOpacity
+                    style={[styles.ctaButton, !selectedPlan && styles.ctaButtonDisabled]}
+                    onPress={handleUpgrade}
+                    disabled={!selectedPlan}
+                >
+                    <ThemedText style={styles.ctaButtonText}>
+                        {selectedPlan ? 'Premium\'a Başla' : 'Bir Plan Seçin'}
+                    </ThemedText>
                 </TouchableOpacity>
                 <ThemedText style={styles.termsText}>
                     Devam ederek Kullanım Şartları'nı kabul etmiş olursunuz
@@ -216,6 +249,19 @@ const styles = StyleSheet.create({
         padding: 20,
         paddingTop: 60,
         alignItems: 'flex-end',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+    },
+    refreshButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: '#f0f0f0',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    refreshText: {
+        fontSize: 20,
     },
     closeButton: {
         width: 40,
@@ -313,9 +359,10 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: '#e0e0e0',
     },
-    recommendedCard: {
-        borderColor: '#3B82F6',
-        backgroundColor: '#EFF6FF',
+    selectedCard: {
+        borderColor: '#10B981',
+        backgroundColor: '#F0FDF4',
+        borderWidth: 3,
     },
     badge: {
         position: 'absolute',
@@ -424,6 +471,10 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 18,
         fontWeight: 'bold',
+    },
+    ctaButtonDisabled: {
+        backgroundColor: '#BFDBFE',
+        shadowColor: 'transparent',
     },
     termsText: {
         textAlign: 'center',
