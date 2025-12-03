@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated, SafeAreaView } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated, SafeAreaView, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from '@/components/themed-text';
@@ -134,6 +134,8 @@ const styles = StyleSheet.create({
     },
     leafIcon: {
         fontSize: 80,
+        lineHeight: 90,
+
     },
     textContainer: {
         alignItems: 'center',
@@ -145,6 +147,7 @@ const styles = StyleSheet.create({
         color: '#fff',
         marginBottom: Spacing.md,
         textAlign: 'center',
+        lineHeight: 42
     },
     subtitle: {
         fontSize: 20,

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated, ScrollView, SafeAreaView } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated, SafeAreaView } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ThemedText } from '@/components/themed-text';
@@ -65,11 +65,7 @@ export default function HowItWorksScreen() {
             style={styles.container}
         >
             <SafeAreaView style={styles.safeArea}>
-                <ScrollView
-                    style={styles.scrollView}
-                    contentContainerStyle={styles.scrollContent}
-                    showsVerticalScrollIndicator={false}
-                >
+                <View style={styles.mainContent}>
                     {/* Başlık */}
                     <Animated.View style={[styles.header, { opacity: fadeIn }]}>
                         <ThemedText style={styles.title}>Nasıl Çalışır?</ThemedText>
@@ -130,7 +126,7 @@ export default function HowItWorksScreen() {
                             </LinearGradient>
                         </TouchableOpacity>
                     </Animated.View>
-                </ScrollView>
+                </View>
 
                 {/* Progress Indicator */}
                 <View style={styles.progressContainer}>
@@ -150,73 +146,68 @@ const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
     },
-    scrollView: {
+    mainContent: {
         flex: 1,
-    },
-    scrollContent: {
-        flexGrow: 1,
+        justifyContent: 'space-between',
         paddingHorizontal: Spacing.xl,
-        paddingTop: Spacing.xl,
-        paddingBottom: Spacing.lg,
+        paddingVertical: Spacing.xxl,
     },
     header: {
         alignItems: 'center',
-        marginBottom: Spacing.xl,
-        marginTop: Spacing.lg,
+        top: 30,
     },
     title: {
-        fontSize: 32,
+        fontSize: 28,
         fontWeight: 'bold',
         color: '#fff',
-        marginBottom: Spacing.md,
+        marginBottom: Spacing.sm,
         textAlign: 'center',
     },
     subtitle: {
-        fontSize: 16,
+        fontSize: 14,
         color: '#fff',
         opacity: 0.9,
         textAlign: 'center',
     },
     featuresContainer: {
-        gap: Spacing.md,
-        marginBottom: Spacing.xl,
+        gap: Spacing.sm,
+        flex: 1,
+        justifyContent: 'center',
     },
     featureCard: {
         backgroundColor: 'rgba(255, 255, 255, 0.15)',
         borderRadius: BorderRadius.lg,
-        padding: Spacing.lg,
+        padding: Spacing.md,
         alignItems: 'center',
         ...Shadows.medium,
     },
     iconContainer: {
-        width: 70,
-        height: 70,
-        borderRadius: 35,
+        width: 60,
+        height: 60,
+        borderRadius: 30,
         backgroundColor: 'rgba(255, 255, 255, 0.2)',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: Spacing.sm,
+        marginBottom: Spacing.xs,
     },
     featureIcon: {
-        fontSize: 36,
+        fontSize: 32,
     },
     featureTitle: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: 'bold',
         color: '#fff',
         marginBottom: Spacing.xs,
         textAlign: 'center',
     },
     featureDescription: {
-        fontSize: 14,
+        fontSize: 12,
         color: '#fff',
         opacity: 0.85,
         textAlign: 'center',
     },
     buttonContainer: {
         width: '100%',
-        marginTop: Spacing.md,
-        marginBottom: Spacing.lg,
     },
     continueButton: {
         width: '100%',
